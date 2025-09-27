@@ -6,7 +6,7 @@
 
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1CFFaZkjuxGh2r8fue4yogVSIsiSqJks2
+View your app in AI Studio: https://ruselmi.github.io/ddd/
 
 ## Run Locally
 
