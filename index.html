@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Media Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #4a90e2;
+      --background-color: #121212;
+      --surface-color: #1e1e1e;
+      --text-color: #e0e0e0;
+      --border-color: #333;
+      --loader-color: var(--primary-color);
+      --danger-color: #e94f4f;
+      --success-color: #28a745;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    #app {
+      width: 100%;
+      max-width: 700px;
+      background-color: var(--surface-color);
+      border-radius: 12px;
+      padding: clamp(1rem, 5vw, 2rem);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-color);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #fff;
+    }
+    h1 {
+        margin-bottom: 1.5rem;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+    .tab-button {
+      flex: 1;
+      padding: 1rem;
+      border: none;
+      background-color: transparent;
+      color: var(--text-color);
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s, border-bottom 0.2s;
+      border-bottom: 3px solid transparent;
+      position: relative;
+      top: 1px;
+    }
+    .tab-button.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    .tab-button:hover:not(.active) {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .form-control {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    .prompt-container {
+        position: relative;
+    }
+    textarea, select, input[type="file"], input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: var(--background-color);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-color);
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    textarea:focus, select:focus, input[type="text"]:focus, input[type="password"]:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+        outline: none;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .prompt-container textarea {
+       padding-right: 50px; /* Space for mic button */
+    }
+    button {
+      width: 100%;
+      padding: 0.8rem 1.5rem;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    button:hover {
+      background-color: #3a82d2;
+    }
+    button:active {
+        transform: scale(0.98);
+    }
+    button:disabled {
+        background-color: #555;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+    .mic-button {
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: 50%;
+        background-color: var(--surface-color);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+        font-size: 1.2rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .mic-button:hover {
+        background-color: var(--border-color);
+    }
+    .mic-button.recording {
+        background-color: var(--danger-color);
+        color: white;
+        border-color: var(--danger-color);
+    }
+    .loader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      margin: 2rem 0;
+      min-height: 100px;
+    }
+    .loader:before {
+        content: '';
+        border: 4px solid var(--border-color);
+        border-top: 4px solid var(--loader-color);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+    }
+    .loader p {
+        margin-top: 1rem;
+        color: #aaa;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .scene-output img, .scene-output video {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background-color: #000;
+      display: block;
+      transition: filter 0.3s ease-in-out;
+    }
+    .error-message {
+        color: #ff4d4d;
+        text-align: center;
+        margin-top: 1rem;
+        background-color: rgba(255, 77, 77, 0.1);
+        padding: 0.75rem;
+        border-radius: 6px;
+    }
+    .presets-section {
+        border-top: 1px solid var(--border-color);
+        padding-top: 1.5rem;
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .presets-controls {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .presets-controls > * {
+        flex: 1 1 auto;
+    }
+    .presets-controls button {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+    }
+    .presets-controls #load-preset-btn, 
+    .presets-controls #delete-preset-btn {
+        flex-grow: 0;
+        width: auto;
+    }
+     .presets-controls #delete-preset-btn {
+        background-color: var(--danger-color);
+     }
+     .presets-controls #delete-preset-btn:hover {
+        background-color: #d03f3f;
+     }
+    .media-container {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+    }
+    .tts-button {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        font-size: 1.2rem;
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+    .tts-button:hover {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+    .filter-select {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background-color: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        padding: 4px;
+        font-size: 0.8rem;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+    .media-container:hover .filter-select {
+        opacity: 1;
+    }
+    /* Filter classes */
+    .filter-grayscale { filter: grayscale(100%); }
+    .filter-sepia { filter: sepia(100%); }
+    .filter-invert { filter: invert(100%); }
+    .filter-blur { filter: blur(4px); }
+    .filter-brightness { filter: brightness(150%); }
+    .filter-contrast { filter: contrast(200%); }
+
+    .api-key-section {
+        background-color: rgba(74, 144, 226, 0.1);
+        border: 1px solid var(--primary-color);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+    .api-key-section small {
+        display: block;
+        margin-top: 0.5rem;
+        color: #aaa;
+    }
+
+    .audio-controls {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    .download-button {
+      background-color: var(--success-color);
+    }
+    .download-button:hover {
+        background-color: #218838;
+    }
+    .voiceover-button {
+      background-color: var(--primary-color);
+    }
+    .voiceover-button:hover {
+      background-color: #3a82d2;
+    }
+    .video-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+      justify-content: center;
+    }
+    .video-actions button {
+      width: auto;
+      padding: 0.7rem 1.2rem;
+      font-size: 0.9rem;
+    }
+    .scene-card {
+      background-color: var(--background-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .scene-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .scene-header .prompt-container {
+        flex-grow: 1;
+    }
+    .scene-header textarea {
+        min-height: 40px;
+    }
+     .remove-scene-btn {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        padding: 0;
+        font-size: 1.2rem;
+        background-color: var(--danger-color);
+        border-radius: 6px;
+    }
+    .remove-scene-btn:hover {
+        background-color: #d03f3f;
+    }
+    .add-scene-btn {
+        width: 100%;
+        background-color: transparent;
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .add-scene-btn:hover {
+        background-color: rgba(74, 144, 226, 0.1);
+    }
+    .scene-output {
+        margin-top: 1rem;
+        min-height: 50px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.21.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="app">
+    <h1>AI Media Generator</h1>
+    <div class="form-control api-key-section">
+      <label for="api-key-input">Gemini API Key</label>
+      <input type="password" id="api-key-input" placeholder="Masukkan Gemini API Key Anda di sini">
+      <small>Kunci Anda disimpan sementara di browser dan tidak pernah dibagikan.</small>
+    </div>
+    <div class="tabs">
+      <button id="image-tab" class="tab-button active" aria-controls="image-generator" role="tab" aria-selected="true">Image</button>
+      <button id="video-tab" class="tab-button" aria-controls="video-generator" role="tab" aria-selected="false">Video</button>
+      <button id="audio-tab" class="tab-button" aria-controls="audio-generator" role="tab" aria-selected="false">Audio</button>
+    </div>
+    
+    <div id="image-generator" class="tab-content active" role="tabpanel" aria-labelledby="image-tab">
+      <h2>Generate an Image Sequence</h2>
+      <div class="form-control">
+        <label for="image-initial-input">Initial Image (Optional, for first scene)</label>
+        <input type="file" id="image-initial-input" accept="image/png, image/jpeg">
+      </div>
+      <div class="form-control">
+        <label for="aspect-ratio">Aspect Ratio (for all scenes)</label>
+        <select id="aspect-ratio">
+          <option value="1:1" selected>1:1 (Square)</option>
+          <option value="16:9">16:9 (Widescreen)</option>
+          <option value="9:16">9:16 (Portrait)</option>
+          <option value="4:3">4:3 (Standard)</option>
+          <option value="3:4">3:4 (Tall)</option>
+        </select>
+      </div>
+      <div id="image-scenes-container">
+        <!-- Image scenes will be dynamically added here -->
+      </div>
+      <button id="add-image-scene-btn" class="add-scene-btn">+ Add Scene</button>
+      
+      <div class="presets-section">
+        <div class="form-control">
+            <label for="preset-name">Save Aspect Ratio as Preset</label>
+            <div class="presets-controls">
+                <input type="text" id="preset-name" placeholder="My Aspect Ratio Preset">
+                <button id="save-preset-btn">Save</button>
+            </div>
+        </div>
+         <div class="form-control">
+            <label for="presets-list">Load or Delete a Preset</label>
+            <div class="presets-controls">
+                <select id="presets-list"></select>
+                <button id="load-preset-btn">Load</button>
+                <button id="delete-preset-btn">Delete</button>
+            </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="video-generator" class="tab-content" role="tabpanel" aria-labelledby="video-tab">
+      <h2>Generate a Video Sequence</h2>
+      <div class="form-control">
+        <label for="video-initial-input">Initial Image (Optional, for first scene)</label>
+        <input type="file" id="video-initial-input" accept="image/png, image/jpeg">
+      </div>
+      <div class="form-control">
+        <label for="video-duration">Duration per Video (seconds)</label>
+        <select id="video-duration">
+          <option value="5" selected>5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+        </select>
+      </div>
+      <div id="video-scenes-container">
+          <!-- Video scenes will be dynamically added here -->
+      </div>
+      <button id="add-video-scene-btn" class="add-scene-btn">+ Add Scene</button>
+    </div>
+
+    <div id="audio-generator" class="tab-content" role="tabpanel" aria-labelledby="audio-tab">
+      <h2>Generate Audio from Text</h2>
+      <div class="form-control">
+        <label for="audio-prompt">Text</label>
+        <textarea id="audio-prompt" rows="5" placeholder="Enter text to be read aloud..."></textarea>
+      </div>
+      <div class="audio-controls">
+        <button id="audio-play-btn">Play</button>
+        <button id="audio-pause-btn">Pause</button>
+        <button id="audio-stop-btn">Stop</button>
+      </div>
+      <div id="audio-output" role="status" aria-live="polite">
+        <p id="audio-status">Status: Idle</p>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="index.js"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
