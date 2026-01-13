@@ -1,483 +1,348 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
+
 <head>
-  <title>AI Media Generator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary-color: #4a90e2;
-      --background-color: #121212;
-      --surface-color: #1e1e1e;
-      --text-color: #e0e0e0;
-      --border-color: #333;
-      --loader-color: var(--primary-color);
-      --danger-color: #e94f4f;
-      --success-color: #28a745;
-    }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--background-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 1rem;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-    }
-    #app {
-      width: 100%;
-      max-width: 700px;
-      background-color: var(--surface-color);
-      border-radius: 12px;
-      padding: clamp(1rem, 5vw, 2rem);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--border-color);
-    }
-    h1, h2 {
-      text-align: center;
-      color: #fff;
-    }
-    h1 {
-        margin-bottom: 1.5rem;
-    }
-    .tabs {
-      display: flex;
-      border-bottom: 1px solid var(--border-color);
-      margin-bottom: 1.5rem;
-    }
-    .tab-button {
-      flex: 1;
-      padding: 1rem;
-      border: none;
-      background-color: transparent;
-      color: var(--text-color);
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.2s, color 0.2s, border-bottom 0.2s;
-      border-bottom: 3px solid transparent;
-      position: relative;
-      top: 1px;
-    }
-    .tab-button.active {
-      color: var(--primary-color);
-      border-bottom-color: var(--primary-color);
-    }
-    .tab-button:hover:not(.active) {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
-    .form-control {
-      margin-bottom: 1.5rem;
-    }
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-    }
-    .prompt-container {
-        position: relative;
-    }
-    textarea, select, input[type="file"], input[type="text"], input[type="password"] {
-      width: 100%;
-      padding: 0.75rem;
-      background-color: var(--background-color);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      color: var(--text-color);
-      font-size: 1rem;
-      box-sizing: border-box;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    textarea:focus, select:focus, input[type="text"]:focus, input[type="password"]:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
-        outline: none;
-    }
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-    .prompt-container textarea {
-       padding-right: 50px; /* Space for mic button */
-    }
-    button {
-      width: 100%;
-      padding: 0.8rem 1.5rem;
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s, transform 0.1s;
-    }
-    button:hover {
-      background-color: #3a82d2;
-    }
-    button:active {
-        transform: scale(0.98);
-    }
-    button:disabled {
-        background-color: #555;
-        cursor: not-allowed;
-        opacity: 0.7;
-    }
-    .mic-button {
-        position: absolute;
-        right: 8px;
-        top: 8px;
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border-radius: 50%;
-        background-color: var(--surface-color);
-        color: var(--text-color);
-        border: 1px solid var(--border-color);
-        cursor: pointer;
-        font-size: 1.2rem;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    .mic-button:hover {
-        background-color: var(--border-color);
-    }
-    .mic-button.recording {
-        background-color: var(--danger-color);
-        color: white;
-        border-color: var(--danger-color);
-    }
-    .loader {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      margin: 2rem 0;
-      min-height: 100px;
-    }
-    .loader:before {
-        content: '';
-        border: 4px solid var(--border-color);
-        border-top: 4px solid var(--loader-color);
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-    }
-    .loader p {
-        margin-top: 1rem;
-        color: #aaa;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .scene-output img, .scene-output video {
-      max-width: 100%;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      background-color: #000;
-      display: block;
-      transition: filter 0.3s ease-in-out;
-    }
-    .error-message {
-        color: #ff4d4d;
-        text-align: center;
-        margin-top: 1rem;
-        background-color: rgba(255, 77, 77, 0.1);
-        padding: 0.75rem;
-        border-radius: 6px;
-    }
-    .presets-section {
-        border-top: 1px solid var(--border-color);
-        padding-top: 1.5rem;
-        margin-top: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-    .presets-controls {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
-    .presets-controls > * {
-        flex: 1 1 auto;
-    }
-    .presets-controls button {
-        font-size: 0.9rem;
-        padding: 0.5rem;
-    }
-    .presets-controls #load-preset-btn, 
-    .presets-controls #delete-preset-btn {
-        flex-grow: 0;
-        width: auto;
-    }
-     .presets-controls #delete-preset-btn {
-        background-color: var(--danger-color);
-     }
-     .presets-controls #delete-preset-btn:hover {
-        background-color: #d03f3f;
-     }
-    .media-container {
-        position: relative;
-        display: inline-block;
-        width: 100%;
-        max-width: 480px;
-        margin: 0 auto;
-    }
-    .tts-button {
-        position: absolute;
-        bottom: 10px;
-        right: 10px;
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        font-size: 1.2rem;
-        border-radius: 50%;
-        background-color: rgba(0, 0, 0, 0.6);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        cursor: pointer;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        transition: background-color 0.2s;
-    }
-    .tts-button:hover {
-        background-color: rgba(0, 0, 0, 0.8);
-    }
-    .filter-select {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background-color: rgba(0, 0, 0, 0.6);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-        padding: 4px;
-        font-size: 0.8rem;
-        opacity: 0.5;
-        transition: opacity 0.2s;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-    }
-    .media-container:hover .filter-select {
-        opacity: 1;
-    }
-    /* Filter classes */
-    .filter-grayscale { filter: grayscale(100%); }
-    .filter-sepia { filter: sepia(100%); }
-    .filter-invert { filter: invert(100%); }
-    .filter-blur { filter: blur(4px); }
-    .filter-brightness { filter: brightness(150%); }
-    .filter-contrast { filter: contrast(200%); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taniku - Platform Harga Pangan Nasional</title>
+    <meta name="description" content="Pantau harga komoditas pertanian real-time di seluruh Indonesia">
+    <meta name="theme-color" content="#22c55e">
 
-    .api-key-section {
-        background-color: rgba(74, 144, 226, 0.1);
-        border: 1px solid var(--primary-color);
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 2rem;
-    }
-    .api-key-section small {
-        display: block;
-        margin-top: 0.5rem;
-        color: #aaa;
-    }
+    <!-- Fonts & Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
 
-    .audio-controls {
-        display: flex;
-        gap: 1rem;
-        margin-top: 1.5rem;
-    }
-    .download-button {
-      background-color: var(--success-color);
-    }
-    .download-button:hover {
-        background-color: #218838;
-    }
-    .voiceover-button {
-      background-color: var(--primary-color);
-    }
-    .voiceover-button:hover {
-      background-color: #3a82d2;
-    }
-    .video-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-top: 1rem;
-      justify-content: center;
-    }
-    .video-actions button {
-      width: auto;
-      padding: 0.7rem 1.2rem;
-      font-size: 0.9rem;
-    }
-    .scene-card {
-      background-color: var(--background-color);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-    .scene-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    .scene-header .prompt-container {
-        flex-grow: 1;
-    }
-    .scene-header textarea {
-        min-height: 40px;
-    }
-     .remove-scene-btn {
-        width: 38px;
-        height: 38px;
-        flex-shrink: 0;
-        padding: 0;
-        font-size: 1.2rem;
-        background-color: var(--danger-color);
-        border-radius: 6px;
-    }
-    .remove-scene-btn:hover {
-        background-color: #d03f3f;
-    }
-    .add-scene-btn {
-        width: 100%;
-        background-color: transparent;
-        border: 1px solid var(--primary-color);
-        color: var(--primary-color);
-        padding: 0.75rem 1rem;
-        font-size: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    .add-scene-btn:hover {
-        background-color: rgba(74, 144, 226, 0.1);
-    }
-    .scene-output {
-        margin-top: 1rem;
-        min-height: 50px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-  </style>
-<script type="importmap">
-{
-  "imports": {
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.21.0"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obFTR+69w=" crossorigin="" />
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
+
 <body>
-  <div id="app">
-    <h1>AI Media Generator</h1>
-    <div class="form-control api-key-section">
-      <label for="api-key-input">Gemini API Key</label>
-      <input type="password" id="api-key-input" placeholder="Masukkan Gemini API Key Anda di sini">
-      <small>Kunci Anda disimpan sementara di browser dan tidak pernah dibagikan.</small>
-    </div>
-    <div class="tabs">
-      <button id="image-tab" class="tab-button active" aria-controls="image-generator" role="tab" aria-selected="true">Image</button>
-      <button id="video-tab" class="tab-button" aria-controls="video-generator" role="tab" aria-selected="false">Video</button>
-      <button id="audio-tab" class="tab-button" aria-controls="audio-generator" role="tab" aria-selected="false">Audio</button>
-    </div>
-    
-    <div id="image-generator" class="tab-content active" role="tabpanel" aria-labelledby="image-tab">
-      <h2>Generate an Image Sequence</h2>
-      <div class="form-control">
-        <label for="image-initial-input">Initial Image (Optional, for first scene)</label>
-        <input type="file" id="image-initial-input" accept="image/png, image/jpeg">
-      </div>
-      <div class="form-control">
-        <label for="aspect-ratio">Aspect Ratio (for all scenes)</label>
-        <select id="aspect-ratio">
-          <option value="1:1" selected>1:1 (Square)</option>
-          <option value="16:9">16:9 (Widescreen)</option>
-          <option value="9:16">9:16 (Portrait)</option>
-          <option value="4:3">4:3 (Standard)</option>
-          <option value="3:4">3:4 (Tall)</option>
-        </select>
-      </div>
-      <div id="image-scenes-container">
-        <!-- Image scenes will be dynamically added here -->
-      </div>
-      <button id="add-image-scene-btn" class="add-scene-btn">+ Add Scene</button>
-      
-      <div class="presets-section">
-        <div class="form-control">
-            <label for="preset-name">Save Aspect Ratio as Preset</label>
-            <div class="presets-controls">
-                <input type="text" id="preset-name" placeholder="My Aspect Ratio Preset">
-                <button id="save-preset-btn">Save</button>
-            </div>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading">
+        <div class="loading-logo">🌾</div>
+        <h1 class="loading-title">Taniku</h1>
+        <div class="loading-bar">
+            <div class="loading-bar-fill" id="loading-bar"></div>
         </div>
-         <div class="form-control">
-            <label for="presets-list">Load or Delete a Preset</label>
-            <div class="presets-controls">
-                <select id="presets-list"></select>
-                <button id="load-preset-btn">Load</button>
-                <button id="delete-preset-btn">Delete</button>
-            </div>
-        </div>
-      </div>
-    </div>
-    
-    <div id="video-generator" class="tab-content" role="tabpanel" aria-labelledby="video-tab">
-      <h2>Generate a Video Sequence</h2>
-      <div class="form-control">
-        <label for="video-initial-input">Initial Image (Optional, for first scene)</label>
-        <input type="file" id="video-initial-input" accept="image/png, image/jpeg">
-      </div>
-      <div class="form-control">
-        <label for="video-duration">Duration per Video (seconds)</label>
-        <select id="video-duration">
-          <option value="5" selected>5</option>
-          <option value="6">6</option>
-          <option value="7">7</option>
-          <option value="8">8</option>
-        </select>
-      </div>
-      <div id="video-scenes-container">
-          <!-- Video scenes will be dynamically added here -->
-      </div>
-      <button id="add-video-scene-btn" class="add-scene-btn">+ Add Scene</button>
+        <div class="loading-status" id="loading-status">Menginisialisasi...</div>
+        <div class="e2ee-badge">🔐 End-to-End Encrypted Data</div>
     </div>
 
-    <div id="audio-generator" class="tab-content" role="tabpanel" aria-labelledby="audio-tab">
-      <h2>Generate Audio from Text</h2>
-      <div class="form-control">
-        <label for="audio-prompt">Text</label>
-        <textarea id="audio-prompt" rows="5" placeholder="Enter text to be read aloud..."></textarea>
-      </div>
-      <div class="audio-controls">
-        <button id="audio-play-btn">Play</button>
-        <button id="audio-pause-btn">Pause</button>
-        <button id="audio-stop-btn">Stop</button>
-      </div>
-      <div id="audio-output" role="status" aria-live="polite">
-        <p id="audio-status">Status: Idle</p>
-      </div>
+    <!-- Main App -->
+    <div class="app" id="app">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <span class="logo-icon">🌾</span>
+                <span class="logo-text">Taniku</span>
+            </div>
+            <nav class="nav">
+                <div class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span>Dashboard</div>
+                <div class="nav-item" data-page="komoditas"><span class="nav-icon">🌿</span>Komoditas</div>
+                <div class="nav-item" data-page="peta"><span class="nav-icon">🗺️</span>Peta Harga</div>
+                <div class="nav-item" data-page="internasional"><span class="nav-icon">🌍</span>Internasional</div>
+                <div class="nav-item" data-page="kalkulator"><span class="nav-icon">🧮</span>Kalkulator</div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sync-status online" id="sync-status">🔄 <span>Real-time Connected</span></div>
+                <div class="location-badge" id="location">📍 <span>Mendeteksi...</span></div>
+                <div class="location-badge" id="api-source-badge"
+                    style="cursor:pointer;margin-top:0.5rem;border-color:var(--primary)"
+                    title="Klik untuk ganti sumber data">
+                    <div id="api-indicator"
+                        style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;margin-right:0.5rem">
+                    </div>
+                    <span id="api-status-text">Cek API...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <header class="header">
+                <div class="header-left">
+                    <button class="menu-btn" id="menu-btn">☰</button>
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <input type="text" id="search" placeholder="Cari komoditas...">
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Page -->
+            <section class="page active" id="page-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div>
+                            <div class="stat-value" id="stat-total">0</div>
+                            <div class="stat-label">Komoditas</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div>
+                            <div class="stat-value">34</div>
+                            <div class="stat-label">Provinsi</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⬆️</div>
+                        <div>
+                            <div class="stat-value" id="stat-up">0</div>
+                            <div class="stat-label">Harga Naik</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⬇️</div>
+                        <div>
+                            <div class="stat-value" id="stat-down">0</div>
+                            <div class="stat-label">Harga Turun</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-section">
+                    <div class="chart-card">
+                        <div class="chart-title">📈 Tren Harga Mingguan</div>
+                        <canvas id="weekly-chart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">📊 Distribusi Kategori</div>
+                        <canvas id="category-chart"></canvas>
+                    </div>
+                </div>
+                <h3 class="section-title">🔥 Pergerakan Terbesar</h3>
+                <div class="movers-grid" id="top-movers"></div>
+            </section>
+
+            <!-- Komoditas Page -->
+            <section class="page" id="page-komoditas">
+                <div class="filter-bar">
+                    <div class="filter-chips" id="filters"></div>
+                </div>
+                <div class="commodities-grid" id="commodities-grid"></div>
+            </section>
+
+            <!-- Peta Page -->
+            <section class="page" id="page-peta">
+                <div class="map-page">
+                    <div class="map-controls">
+                        <select id="map-select">
+                            <option value="">Memuat Peta...</option>
+                        </select>
+                    </div>
+                    <div id="map-container"></div>
+                    <div class="map-legend">
+                        <h4>Tingkat Harga</h4>
+                        <div class="legend-item"><span class="legend-color low"></span>Rendah</div>
+                        <div class="legend-item"><span class="legend-color medium"></span>Sedang</div>
+                        <div class="legend-item"><span class="legend-color high"></span>Tinggi</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Internasional Page -->
+            <section class="page" id="page-internasional">
+                <div class="intl-header">
+                    <h2>Perbandingan Harga Internasional</h2>
+                    <div class="exchange-rate">1 USD = Rp ...</div>
+                </div>
+                <div class="intl-grid" id="intl-grid"></div>
+            </section>
+
+            <!-- Kalkulator Page -->
+            <section class="page" id="page-kalkulator">
+                <div class="calc-tabs">
+                    <button class="calc-tab active" data-tab="lahan">🌾 Luas Lahan</button>
+                    <button class="calc-tab" data-tab="benih">🌱 Kebutuhan Benih</button>
+                    <button class="calc-tab" data-tab="pupuk">🧪 Kebutuhan Pupuk</button>
+                    <button class="calc-tab" data-tab="panen">📦 Estimasi Panen</button>
+                    <button class="calc-tab" data-tab="cuaca">🌦️ Cek Cuaca & Tanam</button>
+                </div>
+
+                <!-- Panels -->
+                <div class="calc-panel active" id="calc-lahan">
+                    <div class="calc-form">
+                        <h3>🌾 Kalkulator Luas Lahan</h3>
+                        <p style="color:var(--text-muted);margin-bottom:1.5rem">Konversi berbagai satuan luas lahan</p>
+                        <div class="calc-input"><label>Nilai</label><input type="number" id="lahan-nilai"
+                                placeholder="1"></div>
+                        <div class="calc-input">
+                            <label>Dari Satuan</label>
+                            <select id="lahan-dari">
+                                <option value="hektar">Hektar (Ha)</option>
+                                <option value="are">Are</option>
+                                <option value="m2">Meter Persegi (m²)</option>
+                                <option value="bata">Bata / Ru (Jawa)</option>
+                                <option value="tumbak">Tumbak / Bahu</option>
+                                <option value="acre">Acre</option>
+                            </select>
+                        </div>
+                        <button class="calc-btn" id="calc-lahan-btn">Konversi</button>
+                        <div class="calc-result" id="lahan-result"></div>
+                    </div>
+                </div>
+
+                <div class="calc-panel" id="calc-benih">
+                    <div class="calc-form">
+                        <h3>🌱 Kalkulator Kebutuhan Benih</h3>
+                        <div class="calc-input"><label>Luas Lahan (Ha)</label><input type="number" id="benih-luas"
+                                placeholder="1"></div>
+                        <div class="calc-input">
+                            <label>Jenis Tanaman</label>
+                            <select id="benih-jenis">
+                                <option value="padi">Padi (25 kg/Ha)</option>
+                                <option value="jagung">Jagung (20 kg/Ha)</option>
+                                <option value="kedelai">Kedelai (40 kg/Ha)</option>
+                                <option value="cabai">Cabai (150 gr/Ha)</option>
+                                <option value="tomat">Tomat (200 gr/Ha)</option>
+                                <option value="bawang">Bawang Merah (1 ton/Ha)</option>
+                                <option value="kentang">Kentang (1.5 ton/Ha)</option>
+                            </select>
+                        </div>
+                        <button class="calc-btn" id="calc-benih-btn">Hitung</button>
+                        <div class="calc-result" id="benih-result"></div>
+                    </div>
+                </div>
+
+                <div class="calc-panel" id="calc-pupuk">
+                    <div class="calc-form">
+                        <h3>🧪 Kalkulator Pupuk</h3>
+                        <div class="calc-input"><label>Luas Lahan (Ha)</label><input type="number" id="pupuk-luas"
+                                placeholder="1"></div>
+                        <div class="calc-input">
+                            <label>Jenis</label>
+                            <select id="pupuk-jenis">
+                                <option value="padi">Padi</option>
+                                <option value="jagung">Jagung</option>
+                                <option value="sayuran">Sayuran</option>
+                                <option value="buah">Buah</option>
+                                <option value="perkebunan">Perkebunan</option>
+                            </select>
+                        </div>
+                        <button class="calc-btn" id="calc-pupuk-btn">Hitung</button>
+                        <div class="calc-result" id="pupuk-result"></div>
+                    </div>
+                </div>
+
+                <div class="calc-panel" id="calc-panen">
+                    <div class="calc-form">
+                        <h3>📦 Estimasi Panen</h3>
+                        <div class="calc-input"><label>Luas Lahan (Ha)</label><input type="number" id="panen-luas"
+                                placeholder="1"></div>
+                        <div class="calc-input">
+                            <label>Komoditas</label>
+                            <select id="panen-jenis">
+                                <option value="padi">Padi</option>
+                                <option value="jagung">Jagung</option>
+                                <option value="kedelai">Kedelai</option>
+                                <option value="cabai">Cabai</option>
+                                <option value="tomat">Tomat</option>
+                                <option value="sawit">Sawit</option>
+                            </select>
+                        </div>
+                        <button class="calc-btn" id="calc-panen-btn">Estimasi</button>
+                        <div class="calc-result" id="panen-result"></div>
+                    </div>
+                </div>
+
+                <!-- NEW: Cuaca Panel -->
+                <div class="calc-panel" id="calc-cuaca">
+                    <div class="calc-form">
+                        <h3>🌦️ Analisis Cuaca & Tanam</h3>
+                        <p style="color:var(--text-muted);margin-bottom:1.5rem">Rekomendasi tanam berdasarkan kondisi
+                        </p>
+                        <div class="calc-input"><label>Curah Hujan (mm/hari)</label><input type="number"
+                                id="cuaca-hujan" placeholder="50"></div>
+                        <div class="calc-input"><label>Suhu Rata-rata (°C)</label><input type="number" id="cuaca-suhu"
+                                placeholder="28"></div>
+                        <div class="calc-input">
+                            <label>Rencana Tanam</label>
+                            <select id="cuaca-tanaman">
+                                <option value="padi">Padi Sawah</option>
+                                <option value="cabai">Cabai Merah</option>
+                                <option value="jagung">Jagung</option>
+                                <option value="bawang">Bawang Merah</option>
+                            </select>
+                        </div>
+                        <button class="calc-btn" id="calc-cuaca-btn">Analisis Kelayakan</button>
+                        <div class="calc-result" id="cuaca-result"></div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
     </div>
-  </div>
-  <script type="module" src="index.js"></script>
-<script type="module" src="/index.tsx"></script>
+
+    <!-- Modals -->
+    <div class="modal" id="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <div class="modal-header">
+                <span class="modal-icon" id="modal-icon">🌾</span>
+                <h2 class="modal-title" id="modal-title">Detail</h2>
+            </div>
+            <div class="modal-body">
+                <div class="modal-chart"><canvas id="modal-chart"></canvas></div>
+                <h3>Sub-Komoditas</h3>
+                <div class="sub-commodities" id="sub-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal active" id="welcome-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content" style="max-width:600px">
+            <div class="modal-header">
+                <span class="modal-icon">🌾</span>
+                <h2 class="modal-title">Selamat Datang di Taniku</h2>
+            </div>
+            <div class="modal-body" style="padding:2rem">
+                <h3>Platform Harga Pangan Terintegrasi</h3>
+                <p style="color:var(--text-muted);margin:1rem 0">Data real-time dari BPS, Kementan, dan Pasar
+                    Internasional.</p>
+
+                <div style="background:var(--bg-primary);padding:1rem;border-radius:10px;margin-bottom:1rem">
+                    <div>✅ 60+ Komoditas Nasional</div>
+                    <div>✅ Analisis Cuaca & Kalkulator Tani</div>
+                    <div>✅ Monitoring Harga Wilayah</div>
+                </div>
+
+                <button class="calc-btn" id="welcome-close">Mulai Eksplorasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modular Scripts -->
+    <!-- Libraries -->
+    <!-- Load Logic Utils First -->
+    <script src="logic.js"></script>
+    <script src="api.js"></script>
+    <script src="location.js"></script>
+    <script src="komoditas.js"></script>
+    <script src="ailogic.js"></script>
+    <script src="chart.js"></script>
+    <script src="kalkulator.js"></script>
+    <!-- Main Controller -->
+    <script src="script.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(e => console.log('SW Fail:', e));
+        }
+    </script>
 </body>
+
 </html>
